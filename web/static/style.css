@@ -1,0 +1,120 @@
+body {
+	padding-top: 50px;
+}
+
+body.noscroll {
+	overflow: hidden;
+}
+
+.relative {
+	position:relative;
+}
+
+.dz {
+	width: 100%;
+	z-index: 65535;
+	background: rgba(255, 255, 255, 0.9);
+	position: absolute;
+}
+
+.dzc {
+	text-align: center;
+	width: 50%;
+	padding: 2em;
+	margin-top: 5em;
+	-webkit-border-radius: 25px;
+	-moz-border-radius: 25px;
+	border-radius: 25px;
+	border:1px solid #dddddd;
+	-webkit-box-shadow: 0px 0px 100px 0px rgba(170,170,170,1);
+	-moz-box-shadow: 0px 0px 100px 0px rgba(170,170,170,1);
+	box-shadow: 0px 0px 100px 0px rgba(170,170,170,1);
+}
+
+.dz .dz-success-mark, .dz .dz-error-mark {
+	display: none;
+}
+
+.normal {
+	width: 100%;
+	z-index: 1;
+	position: absolute;
+	vertical-align: middle;
+}
+
+input {
+	width: 300px;
+}
+
+textarea {
+	height: 300px;
+	width: 300px;
+}
+
+/* scroll results */
+.ui-autocomplete {
+	max-height: 250px;
+	overflow-y: auto;
+	/* prevent horizontal scrollbar */
+	overflow-x: hidden;
+	/* add padding for vertical scrollbar */
+	padding-right: 5px;
+}
+
+.show {
+	-webkit-border-top-right-radius: 5px;
+	-webkit-border-bottom-right-radius: 5px;
+	-moz-border-radius-topright: 5px;
+	-moz-border-radius-bottomright: 5px;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+}
+
+pre {
+	line-height: 1em;
+	white-space: pre-wrap;       /* css-3 */
+	white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+	white-space: -pre-wrap;      /* Opera 4-6 */
+	white-space: -o-pre-wrap;    /* Opera 7 */
+	word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+pre span {
+	line-height: 1em;
+}
+pre code .line {
+	float: left;
+	width: 100%;
+}
+
+pre .line:nth-child(odd) {
+	background-color: #eaeaea;
+}
+
+pre .line-number {
+	float:left;
+	border-right:1px solid;
+	text-align:right;
+}
+
+pre .line-number span {
+	display:block;
+	padding:0em .5em 0 1em;
+}
+
+pre .cl {
+	display:block;
+	clear:both;
+}
+
+span.diff.remove {
+	color: red;
+	text-decoration: line-through;
+}
+
+span.diff.add {
+	color: lime;
+}
+code span {
+	display: inline-block;
+	min-height: 1em;
+}

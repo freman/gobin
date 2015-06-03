@@ -1,0 +1,27 @@
+{{ define "content" }}
+<div id="content">
+{{ if IsImage .Paste }}
+	<br>
+	<img src="/a/{{ .Paste.ID }}">
+	<br>
+{{ else }}
+	<pre><code id="codeBlock" data-syntax="{{ .Paste.Syntax }}">{{ .Paste.Content }}</code></pre>
+{{ end }}
+</div>
+{{ end }}
+{{ define "title"}}View Paste{{ end }}
+{{ define "pagestyles" }}
+<link rel="stylesheet" href="/static/syntax/default.css">
+{{ end }}
+{{ define "pagescripts"}}
+<script>
+syntax = $('#codeBlock').data('syntax');
+if (hljs.getLanguage(syntax)) {
+	$('#codeBlock').addClass('language-' + syntax);
+	hljs.initHighlightingOnLoad();
+} else {
+	$('#codeBlock').addClass('hljs');
+}
+$('pre').lineNumbers();
+</script>
+{{ end }}

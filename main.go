@@ -1,0 +1,232 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+	"github.com/freman/gobin/pastes"
+	"html/template"
+	"net/http"
+	"github.com/sergi/go-diff/diffmatchpatch"
+)
+
+type Handlers map[string]http.HandlerFunc
+
+var (
+	flListen     string
+	flPath       string
+	flRecent     int
+	bin          *pastes.Pastes
+	templates    map[string]*template.Template
+	pageDefaults map[string]interface{}
+)
+
+func init() {
+	flag.StringVar(&flListen, "listen", ":8080", "Listen configuration")
+	flag.StringVar(&flPath, "path", "/tmp/pastes", "Where to store the posts")
+	flag.IntVar(&flRecent, "recent", 5, "How many recent posts to maintain")
+
+	if templates == nil {
+		templates = make(map[string]*template.Template)
+	}
+
+	templatesDir := "web/templates" //config.Templates.Path
+	pages, err := filepath.Glob(filepath.Join(templatesDir, "pages", "*.tmpl"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	includes, err := filepath.Glob(filepath.Join(templatesDir, "includes", "*.tmpl"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	funcMap := template.FuncMap{
+		// The name "title" is what the function will be called in the template text.
+		"IsBinary": func(p *pastes.Paste) bool {
+			return p.Content == "binary" && strings.Contains(p.Syntax, "/")
+		},
+		"IsImage": func(p *pastes.Paste) bool {
+			return p.Content == "binary" && strings.HasPrefix(p.Syntax, "image/")
+		},
+		"DiffSpan": func(d diffmatchpatch.Diff) interface{} {
+			if d.Type == diffmatchpatch.DiffEqual {
+				return d.Text
+			}
+			class := "add"
+			if d.Type == diffmatchpatch.DiffDelete {
+				class = "remove"
+			}
+			span := "<span class=\"diff " + class + "\">"
+			output := ""
+			lineEndings := ""
+			if strings.Contains(d.Text, "\r") {
+				lineEndings += "\r"
+			}
+			if strings.Contains(d.Text, "\n") {
+				lineEndings += "\n"
+			}
+			for n, v := range strings.Split(d.Text, lineEndings) {
+				if n > 0 {
+					output += lineEndings
+				}
+				output += span + template.HTMLEscapeString(v) + "</span>"
+			}
+			return template.HTML(output)
+		},
+	}
+
+	for _, page := range pages {
+		files := append(includes, page)
+		templates[filepath.Base(page)] = template.Must(template.New("thetemplate").Funcs(funcMap).ParseFiles(files...))
+	}
+
+	if pageDefaults == nil {
+		pageDefaults = make(map[string]interface{})
+	}
+
+	pageDefaults["SiteTitle"] = "GoBin"
+	pageDefaults["SiteDescription"] = "Pastebin in Go"
+	pageDefaults["SiteKeywords"] = []string{"pastebin", "go", "golang"}
+	pageDefaults["GuessLanguages"] = template.JS("\"ini\", \"json\", \"sql\", \"javascript\", \"perl\", \"nginx\", \"php\", \"cpp\", \"java\", \"lua\", \"http\", \"go\", \"xml\", \"bash\", \"python\", \"diff\", \"css\", \"dockerfile\", \"markdown\", \"applescript\", \"ruby\", \"objectivec\"")
+
+	pageDefaults["HaveCookie"] = false
+	pageDefaults["CookieMatch"] = false
+}
+
+func renderTemplate(w http.ResponseWriter, name string, data map[string]interface{}) error {
+	tmpl, ok := templates[name+".tmpl"]
+	if !ok {
+		return fmt.Errorf("Template %s doesn't exist.", name)
+	}
+
+	for k, v := range pageDefaults {
+		if _, e := data[k]; !e {
+			data[k] = v
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err := tmpl.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		log.Println(err)
+	}
+	return nil
+}
+
+func loadPasteFromRequest(w http.ResponseWriter, r *http.Request) *pastes.Paste {
+	id := r.URL.Path
+	return loadPaste(w, id)
+}
+
+func loadPaste(w http.ResponseWriter, id string) *pastes.Paste {
+	if len(id) < 4 {
+		http.Error(w, "404 page not found", http.StatusNotFound)
+		return nil
+	}
+
+	paste, err := bin.Load(id)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "404 page not found", http.StatusNotFound)
+			return nil
+		}
+	}
+
+	return paste
+}
+
+func setCookieDefaults(c *http.Cookie) {
+	c.MaxAge = int(12 * time.Hour / time.Second)
+	c.Expires = time.Now().Add(12 * time.Hour)
+	c.Path = "/"
+}
+
+func getOrGenerateCookie(r *http.Request) *http.Cookie {
+	cookie, err := r.Cookie("gobin")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			author := bin.GenerateID()
+			cookie = &http.Cookie{
+				Name:  "gobin",
+				Value: author,
+			}
+		}
+	}
+	setCookieDefaults(cookie)
+	return cookie
+}
+
+
+func sendBinaryAttachment(paste *pastes.Paste, w http.ResponseWriter) {
+		attachment, err := paste.Attachment()
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer attachment.Close()
+
+		w.Header().Add("Content-Disposition", "attachment; filename=" + paste.Title)
+		w.Header().Set("Content-Type", paste.Syntax)
+		io.Copy(w, attachment)
+}
+
+
+func checkEditCookie(r *http.Request, paste *pastes.Paste) bool {
+	cookie, err := r.Cookie("gobin")
+	if err != nil {
+		return false
+	}
+
+	return cookie.Value == paste.Author
+}
+
+func handlerForMethod(handlers Handlers) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if handler, ok := handlers[r.Method]; ok {
+			handler(w, r)
+			return
+		}
+		http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
+	})
+}
+
+func handlerForPrefix(mux *http.ServeMux, prefix string, handler http.HandlerFunc) {
+	mux.Handle(prefix, http.StripPrefix(prefix, http.HandlerFunc(handler)))
+}
+
+func main() {
+	flag.Parse()
+
+	bin = pastes.New(flPath)
+	loadRecentPastes()
+	pageDefaults["Recent"] = recentPastes
+
+	mux := http.NewServeMux()
+
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+
+	handlerForPrefix(mux, "/", handlerForMethod(Handlers{"GET": indexHandler}))
+	handlerForPrefix(mux, "/p/", handlerForMethod(Handlers{"GET": viewPasteHandler}))
+	handlerForPrefix(mux, "/a/", handlerForMethod(Handlers{"GET": viewAttachmentHandler}))
+	handlerForPrefix(mux, "/g/", handlerForMethod(Handlers{"GET": getPasteHandler}))
+	handlerForPrefix(mux, "/n/", handlerForMethod(Handlers{"GET": newPasteHandler, "POST": saveNewPasteHandler}))
+	handlerForPrefix(mux, "/f/", handlerForMethod(Handlers{"POST": uploadNewPasteHandler}))
+	handlerForPrefix(mux, "/d/", handlerForMethod(Handlers{"GET": diffPasteHandler}))
+	handlerForPrefix(mux, "/e/", handlerForMethod(Handlers{"GET": editPasteHandler, "POST": saveEditPasteHandler}))
+
+	go func() {
+		for {
+			<-time.After(5 * time.Minute)
+			saveRecentPastes()
+		}
+	}()
+
+	http.ListenAndServe(flListen, mux)
+}

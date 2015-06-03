@@ -1,0 +1,17 @@
+{{ define "content" }}
+<div id="content">
+	<h2>{{ .Alpha.Title }} vs {{ .Beta.Title }}</h2>
+	<pre><code id="codeBlock" data-syntax="{{ .Paste.Syntax }}">{{ range $index, $diff := .Diff }}{{ DiffSpan $diff }}{{ end }}</code></pre>
+</div>
+{{ end }}
+{{ define "title" }}Diff Paste{{ end }}
+{{ define "pagestyles" }}
+<link rel="stylesheet" href="/static/syntax/default.css">
+{{ end }}
+{{ define "pagescripts" }}
+<script type="text/javascript" src="/static/highlight.pack.js"></script>
+<script>
+$('#codeBlock').addClass('hljs');
+$('pre').lineNumbers();
+</script>
+{{ end }}
