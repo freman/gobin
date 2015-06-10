@@ -1,0 +1,39 @@
+# Listen configuration
+# ":8080", "localhost:8080"
+Listen = ":8080"
+
+# Path to save pastes to
+Path = "/tmp/pastes"
+
+# Base URL, only really needed if you're using notifications
+BaseURL = "http://pb.lbdev.net"
+
+# Number of recent pastes to keep
+Recent = 5
+
+# The interval at which to save the recent pastes to disk
+SaveInterval = "3m"
+
+[Site]
+Title = "GoBin"
+Description = "Pastebin in Go"
+Keywords = ["go", "golang", "pastebin"]
+GuessLanguages = ["ini", "json", "sql", "javascript", "perl", "nginx", "php", "cpp", "java", "lua", "http", "go", "xml", "bash", "python", "diff", "css", "dockerfile", "markdown", "applescript", "ruby", "objectivec"]
+
+[HipChat]
+# Are we actually using hipchat?
+Enabled = false
+
+# Is the DefaultRoom in fact the forced and only room?
+ForceRoom = true # at this point, can only be true
+
+# Default room to post to
+DefaultRoom = "SysOps"
+
+# List of rooms that are permitted to paste to, leave as empty
+# to automatically discover
+PermittedRooms = ["SysOps", "Developers"] # Currently ignored
+
+# Hipchat v2 api token
+ApiToken = ""
+

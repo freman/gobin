@@ -1,37 +1,58 @@
 {{ define "pastemenu" }}
-		<li class="dropdown">
-			<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ .Paste.Title }} <span class="caret"></span></a>
-			<ul class="dropdown-menu" role="menu">
+		<ul class="nav navbar-nav">
 {{ if not (IsBinary .Paste) }}
 	{{ if .CookieMatch }}
-				<li><a href="/e/{{ .Paste.ID }}">Edit this post</a></li>
+			<li><a href="/e/{{ .Paste.ID }}">Edit this post</a></li>
 	{{ end }}
-				<li><a href="/n/{{ .Paste.ID }}">Extend this post</a></li>
+			<li><a href="/n/{{ .Paste.ID }}">Extend this post</a></li>
 	{{ if .Paste.Parent }}
-				<li><a href="/p/{{ .Paste.Parent }}">Older Version</a></li>
-				<li><a href="/d/{{ .Paste.ID }}/{{ .Paste.Parent }}">Older Diff</a></li>
+			<li><a href="/p/{{ .Paste.Parent }}">Older Version</a></li>
+			<li><a href="/d/{{ .Paste.ID }}/{{ .Paste.Parent }}">Older Diff</a></li>
 	{{ end }}
 	{{ if .Paste.HasChildren }}
 		{{ $paste := .Paste }}
 		{{ if gt 1 (len .Paste.Children) }}
-				<li class="dropdown">
-					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Recent Posts <span class="caret"></span></a>
-					<ul class="dropdown-menu" role="menu">
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">	Recent Posts <span class="caret"></span></a>
+				<ul class="dropdown-menu" role="menu">
 			{{ range $id, $ignore := .Paste.Children }}
-						<li><a href="/p/{{ $id }}">{{ $id }}</a></li>
+					<li><a href="/p/{{ $id }}">{{ $id }}</a></li>
 			{{ end }}
-					</ul>
-				</li>
+				</ul>
+			</li>
 		{{ else }}
 			{{ range $id, $ignore := .Paste.Children }}
-				<li><a href="/p/{{ $id }}">Newer Version</a></li>
-				<li><a href="/d/{{ $id }}/{{ $paste.ID }}">Newer Diff</a></li>
+			<li><a href="/p/{{ $id }}">Newer Version</a></li>
+			<li><a href="/d/{{ $id }}/{{ $paste.ID }}">Newer Diff</a></li>
 			{{ end }}
 		{{ end }}
 	{{ end }}
-				<li role="presentation" class="divider"></li>
+			<li role="presentation" class="divider"></li>
 {{ end }}
-				<li><a href="/g/{{ .Paste.ID }}">Download Post</a></li>
-			</ul>
-		</li>
+{{ if .ShowNotify }}
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Share Post <span class="caret"></span></a>
+				<ul class="dropdown-menu" role="menu">
+	{{ if .HipChat }}{{ $DefaultRoom := .HipChat.DefaultRoom }}{{ $paste := .Paste }}
+		{{ if .HipChat.ForceRoom }}
+					<li><a href="/s/hipchat/{{ $DefaultRoom }}/{{ $paste.ID }}">HipChat ({{ $DefaultRoom }})</a></li>
+		{{ else }}
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">HipChat <span class="caret"></span></a>
+						<ul class="dropdown-menu" role="menu">
+							<li><a href="/s/hipchat/{{ $DefaultRoom }}/{{ .Paste.ID }}">HipChat ({{ $DefaultRoom }})</a></li>
+							<li role="presentation" class="divider"></li>
+				{{ range $i, $room := .HipChat.PermittedRooms }}
+							<li><a href="/s/hipchat/{{ $room }}/{{ $paste.ID }}">{{ $room }}</a></li>
+				{{ end }}
+						</ul>
+					</li>
+		{{ end }}
+{{ end }}
+				</ul>
+			</li>
+			<li role="presentation" class="divider"></li>
+{{ end }}
+			<li><a href="/g/{{ .Paste.ID }}">Download Post</a></li>
+		</ul>
 {{ end }}

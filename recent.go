@@ -2,32 +2,32 @@ package main
 
 import (
 	"fmt"
+	"github.com/freman/gobin/pastes"
+	"io/ioutil"
 	"log"
 	"os"
-	"strings"
-	"io/ioutil"
-	"github.com/freman/gobin/pastes"
 	"path/filepath"
+	"strings"
 )
 
 type Ring struct {
-	head int
-	buf []interface{}
+	head  int
+	buf   []interface{}
 	Empty bool
 }
 
 type Recent struct {
-	ID string
+	ID    string
 	Title string
 }
 
 var (
 	recentPastes *Ring
-	recentDirty bool
+	recentDirty  bool
 )
 
 func init() {
-	recentPastes = &Ring{-1, make([]interface{}, flRecent), true}
+	recentPastes = &Ring{-1, make([]interface{}, config.Recent), true}
 }
 
 func (r *Ring) Push(i interface{}) {
@@ -42,7 +42,7 @@ func (r *Ring) Each(f func(i int, v interface{})) {
 
 	head := r.head
 	length := len(r.buf)
-	for i := 0; i < length; i ++ {
+	for i := 0; i < length; i++ {
 		pos := (head + i + 1) % length
 		f(i, r.buf[pos])
 	}
@@ -50,10 +50,10 @@ func (r *Ring) Each(f func(i int, v interface{})) {
 
 func (r *Ring) Items() []interface{} {
 	result := make([]interface{}, len(r.buf))
-	r.Each(func (i int, v interface{}) {
+	r.Each(func(i int, v interface{}) {
 		result[i] = v
 	})
-	return result;
+	return result
 }
 
 func (r *Recent) String() string {
@@ -61,14 +61,14 @@ func (r *Recent) String() string {
 }
 
 func loadRecentPastes() {
-	content, err := ioutil.ReadFile(filepath.Join(flPath, "recent"))
+	content, err := ioutil.ReadFile(filepath.Join(config.Path, "recent"))
 	if err != nil {
-		if (!os.IsNotExist(err)) {
+		if !os.IsNotExist(err) {
 			log.Println("Problem reading recent pastes: ", err)
 		}
 		return // we don't care
 	}
-	list := strings.Split(string(content), "\n");
+	list := strings.Split(string(content), "\n")
 
 	for _, v := range list {
 		if v != "" {
@@ -84,7 +84,7 @@ func saveRecentPastes() {
 		return
 	}
 
-	file, err := os.Create(filepath.Join(flPath, "recent"))
+	file, err := os.Create(filepath.Join(config.Path, "recent"))
 	if err != nil {
 		log.Println("Can't save recent pastes: ", err)
 		return

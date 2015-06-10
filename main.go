@@ -3,33 +3,35 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/freman/gobin/pastes"
+	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/tbruyelle/hipchat-go/hipchat"
+	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-	"github.com/freman/gobin/pastes"
-	"html/template"
-	"net/http"
-	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 type Handlers map[string]http.HandlerFunc
 
 var (
-	flListen     string
-	flPath       string
-	flRecent     int
-	bin          *pastes.Pastes
-	templates    map[string]*template.Template
-	pageDefaults map[string]interface{}
+	config Config
+	bin              *pastes.Pastes
+	templates        map[string]*template.Template
+	pageDefaults     map[string]interface{}
+	hipChat          *hipchat.Client
 )
 
 func init() {
-	flag.StringVar(&flListen, "listen", ":8080", "Listen configuration")
-	flag.StringVar(&flPath, "path", "/tmp/pastes", "Where to store the posts")
-	flag.IntVar(&flRecent, "recent", 5, "How many recent posts to maintain")
+	var flConfig string
+	flag.StringVar(&flConfig, "config", "./config.toml", "Configuration file")
+	flag.Parse()
+
+	config = loadConfig(flConfig)
 
 	if templates == nil {
 		templates = make(map[string]*template.Template)
@@ -90,13 +92,38 @@ func init() {
 		pageDefaults = make(map[string]interface{})
 	}
 
-	pageDefaults["SiteTitle"] = "GoBin"
-	pageDefaults["SiteDescription"] = "Pastebin in Go"
-	pageDefaults["SiteKeywords"] = []string{"pastebin", "go", "golang"}
-	pageDefaults["GuessLanguages"] = template.JS("\"ini\", \"json\", \"sql\", \"javascript\", \"perl\", \"nginx\", \"php\", \"cpp\", \"java\", \"lua\", \"http\", \"go\", \"xml\", \"bash\", \"python\", \"diff\", \"css\", \"dockerfile\", \"markdown\", \"applescript\", \"ruby\", \"objectivec\"")
+	pageDefaults["Site"] = config.Site
+	pageDefaults["GuessLanguages"] = template.JS(config.Site.GuessLanguages.String())
 
 	pageDefaults["HaveCookie"] = false
 	pageDefaults["CookieMatch"] = false
+	pageDefaults["HipChat"] = nil
+
+	// HTML and CSS is hard, fixme
+	config.HipChat.ForceRoom = true
+
+	if config.HipChat.Enabled && config.HipChat.ApiToken != "" {
+		log.Print("Verifying HipChat configuration")
+		hipChat = hipchat.NewClient(config.HipChat.ApiToken)
+		if config.HipChat.ForceRoom == false && len(config.HipChat.PermittedRooms) == 0 {
+			rooms, _, err := hipChat.Room.List()
+			if err != nil {
+				log.Fatalf("Unable to get list of HipChat rooms: %s", err)
+			}
+
+			for _, r := range rooms.Items {
+				config.HipChat.PermittedRooms = append(config.HipChat.PermittedRooms, r.Name)
+			}
+		}
+
+		if _, _, err := hipChat.Room.Get(config.HipChat.DefaultRoom); err != nil {
+			log.Fatalf("Unable to find room %s: %s", config.HipChat.DefaultRoom, err)
+		}
+
+		pageDefaults["HipChat"] = config.HipChat
+	}
+
+	pageDefaults["ShowNotify"] = pageDefaults["HipChat"] != nil
 }
 
 func renderTemplate(w http.ResponseWriter, name string, data map[string]interface{}) error {
@@ -162,21 +189,19 @@ func getOrGenerateCookie(r *http.Request) *http.Cookie {
 	return cookie
 }
 
-
 func sendBinaryAttachment(paste *pastes.Paste, w http.ResponseWriter) {
-		attachment, err := paste.Attachment()
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		defer attachment.Close()
+	attachment, err := paste.Attachment()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer attachment.Close()
 
-		w.Header().Add("Content-Disposition", "attachment; filename=" + paste.Title)
-		w.Header().Set("Content-Type", paste.Syntax)
-		io.Copy(w, attachment)
+	w.Header().Add("Content-Disposition", "attachment; filename="+paste.Title)
+	w.Header().Set("Content-Type", paste.Syntax)
+	io.Copy(w, attachment)
 }
-
 
 func checkEditCookie(r *http.Request, paste *pastes.Paste) bool {
 	cookie, err := r.Cookie("gobin")
@@ -202,9 +227,7 @@ func handlerForPrefix(mux *http.ServeMux, prefix string, handler http.HandlerFun
 }
 
 func main() {
-	flag.Parse()
-
-	bin = pastes.New(flPath)
+	bin = pastes.New(config.Path)
 	loadRecentPastes()
 	pageDefaults["Recent"] = recentPastes
 
@@ -220,13 +243,14 @@ func main() {
 	handlerForPrefix(mux, "/f/", handlerForMethod(Handlers{"POST": uploadNewPasteHandler}))
 	handlerForPrefix(mux, "/d/", handlerForMethod(Handlers{"GET": diffPasteHandler}))
 	handlerForPrefix(mux, "/e/", handlerForMethod(Handlers{"GET": editPasteHandler, "POST": saveEditPasteHandler}))
+	handlerForPrefix(mux, "/s/", handlerForMethod(Handlers{"GET": sharePasteHandler}))
 
 	go func() {
 		for {
-			<-time.After(5 * time.Minute)
+			<-time.After(config.SaveInterval.Duration)
 			saveRecentPastes()
 		}
 	}()
 
-	http.ListenAndServe(flListen, mux)
+	http.ListenAndServe(config.Listen, mux)
 }

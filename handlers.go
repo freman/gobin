@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"github.com/freman/gobin/pastes"
-	"net/http"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/tbruyelle/hipchat-go/hipchat"
+	"log"
+	"net/http"
+	"strings"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +121,7 @@ func saveNewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	if parentPaste != nil {
 		parentPaste.Save()
 	}
-	http.Redirect(w, r, "/p/" + paste.ID, http.StatusSeeOther)
+	http.Redirect(w, r, "/p/"+paste.ID, http.StatusSeeOther)
 }
 
 func uploadNewPasteHandler(w http.ResponseWriter, r *http.Request) {
@@ -189,18 +190,18 @@ func uploadNewPasteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func diffPasteHandler(w http.ResponseWriter, r *http.Request) {
-	ids   := strings.Split(r.URL.Path, "/")
+	ids := strings.Split(r.URL.Path, "/")
 	alpha := loadPaste(w, ids[0])
 	if alpha == nil {
 		return
 	}
-	beta  := loadPaste(w, ids[1])
+	beta := loadPaste(w, ids[1])
 	if beta == nil {
 		return
 	}
 
 	dmp := diffmatchpatch.New()
-	diff := dmp.DiffCleanupSemantic(dmp.DiffMain(beta.Content,alpha.Content, true))
+	diff := dmp.DiffCleanupSemantic(dmp.DiffMain(beta.Content, alpha.Content, true))
 
 	data := make(map[string]interface{})
 	data["Diff"] = diff
@@ -256,5 +257,48 @@ func saveEditPasteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/p/" + paste.ID, http.StatusSeeOther)
+
+	http.Redirect(w, r, "/p/"+paste.ID, http.StatusSeeOther)
+}
+
+func sharePasteHandler(w http.ResponseWriter, r *http.Request) {
+	bits := strings.Split(r.URL.Path, "/")
+	if len(bits) < 3 {
+		http.Error(w, "400 Method Not Allowed", http.StatusBadRequest)
+		return
+	}
+
+	platform := bits[0]
+	room := bits[1]
+	paste := loadPaste(w, bits[2])
+
+	if paste == nil {
+		return
+	}
+
+	switch (platform) {
+	case "hipchat":
+		if hipChat == nil {
+			http.Error(w, "404 Not Found", http.StatusNotFound)
+			return
+		}
+		if config.HipChat.ForceRoom && config.HipChat.DefaultRoom != room {
+			http.Error(w, "404 Not Found", http.StatusNotFound)
+			return
+		}
+
+		//todo make sure room is permitted
+
+		notification := &hipchat.NotificationRequest{
+			Message: fmt.Sprintf("Paste: <a href=\"%s/p/%s\">%s</a>", config.BaseURL, paste.ID, paste.Title),
+		}
+
+		_ = notification
+
+		if _, err := hipChat.Room.Notification(room, notification); err != nil {
+			log.Printf("Unable to send notification to room %s: %s", room, err)
+		}
+
+		http.Redirect(w, r, "/p/"+paste.ID, http.StatusFound)
+	}
 }

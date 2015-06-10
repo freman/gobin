@@ -5,10 +5,10 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>{{ .SiteTitle }}{{ template "title" . }}</title>
+	<title>{{ .Site.Title }}{{ template "title" . }}</title>
 
-	<meta name="description" content="{{ .SiteDescription }}" />
-	<meta name="keywords" content="{{ range $i, $keyword := .SiteKeywords }}{{if $i}} {{end}}{{$keyword}}}{{end}}" />
+	<meta name="description" content="{{ .Site.Description }}" />
+	<meta name="keywords" content="{{ range $i, $keyword := .Site.Keywords }}{{if $i}} {{end}}{{$keyword}}}{{end}}" />
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="/static/bootstrap.min.css">
 	<!-- Optional theme -->
@@ -34,7 +34,7 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="/">{{ .SiteTitle }}</a>
+				<a class="navbar-brand" href="/">{{ .Site.Title }}</a>
 			</div>
 			<div id="navbar" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">

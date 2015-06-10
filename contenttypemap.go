@@ -15,10 +15,10 @@ var saveAs map[string]string
 
 func init() {
 	mWillRender = map[string]string{
-		"text/javascript":  "javascript",
-		"text/php":         "php",
-		"text/markdown":    "markdown",
-		"application/json": "json",
+		"text/javascript":    "javascript",
+		"text/php":           "php",
+		"text/markdown":      "markdown",
+		"application/json":   "json",
 		"text/x-perl-script": "perl",
 	}
 
@@ -26,11 +26,11 @@ func init() {
 		"bash": {regexp.MustCompile(`^#!\s*/bin/(?:b?a)?sh`)},
 	}
 
-	saveAs  = map[string]string{
+	saveAs = map[string]string{
 		"javascript": "js",
-		"markdown": "md",
-		"perl": "pl",
-		"bash": "sh",
+		"markdown":   "md",
+		"perl":       "pl",
+		"bash":       "sh",
 	}
 }
 
