@@ -144,7 +144,8 @@ func uploadNewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	log.Println(fileHeader.Header["Content-Disposition"], fileHeader.Header["Content-Type"], err)
-	log.Printf("%#v", fileHeader)
+
+	// Content type as provided by the browser
 	strContentType := fileHeader.Header.Get("Content-Type")
 	contentType := strings.Split(strContentType, "/")
 
@@ -154,10 +155,12 @@ func uploadNewPasteHandler(w http.ResponseWriter, r *http.Request) {
 
 	paste.Title = fileHeader.Filename
 
+	// Attempt to work with the browser content type
 	if syntax, ok := guessByContentType(strContentType); ok {
 		paste.Syntax = syntax
 		paste.ContentFromReader(file)
 	} else {
+		// Still working with the browsers content type
 		switch {
 		case contentType[0] == "image":
 			paste.Syntax = fileHeader.Header.Get("Content-Type")
@@ -166,6 +169,7 @@ func uploadNewPasteHandler(w http.ResponseWriter, r *http.Request) {
 			paste.ContentFromReader(file)
 		// todo video/avi
 		default:
+			// Ok now we try to work with the content directly
 			if syntax, ok := guessByContent(file); ok {
 				paste.Syntax = syntax
 				paste.ContentFromReader(file)

@@ -32,6 +32,9 @@ func (p *Paste) Save() error {
 func (p *Paste) Attach(f multipart.File) {
 	p.Content = "binary"
 	p.attachment = f
+	if p.Syntax == "" {
+		p.Syntax = "application/binary"
+	}
 }
 
 func (p *Paste) Attachment() (io.ReadCloser, error) {

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -15,11 +14,13 @@ var saveAs map[string]string
 
 func init() {
 	mWillRender = map[string]string{
-		"text/javascript":    "javascript",
-		"text/php":           "php",
-		"text/markdown":      "markdown",
 		"application/json":   "json",
+		"text/javascript":    "javascript",
+		"text/html":          "html",
+		"text/markdown":      "markdown",
+		"text/php":           "php",
 		"text/x-perl-script": "perl",
+		"text/xml":           "xml",
 	}
 
 	mContentMatch = map[string][]*regexp.Regexp{
@@ -39,17 +40,22 @@ func guessByContentType(contentType string) (t string, ok bool) {
 	return
 }
 
-func guessByContent(r io.ReadSeeker) (syntax string, text bool) {
+func guessByContent(r io.ReadSeeker) (syntax string, ok bool) {
 	buf := new(bytes.Buffer)
 	io.CopyN(buf, r, 512)
 	r.Seek(0, 0)
 	detected := http.DetectContentType(buf.Bytes())
-	log.Println("detected: " + detected)
-	if strings.HasPrefix(detected, "text/plain;") {
-		text = true
+	contentType := detected
+	if index := strings.Index(contentType, ";"); index >= 0 {
+		contentType = contentType[:index]
+	}
+
+	switch contentType {
+	case "text/plain":
+		ok = true
 		match := buf.String()
 
-	foundType:
+		foundType:
 		for t, exprs := range mContentMatch {
 			for _, expr := range exprs {
 				if expr.MatchString(match) {
@@ -58,6 +64,8 @@ func guessByContent(r io.ReadSeeker) (syntax string, text bool) {
 				}
 			}
 		}
+	default:
+		syntax, ok = guessByContentType(contentType)
 	}
 	return
 }
