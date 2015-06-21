@@ -286,7 +286,7 @@ func sharePasteHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "404 Not Found", http.StatusNotFound)
 			return
 		}
-		if config.HipChat.ForceRoom && config.HipChat.DefaultRoom != room {
+		if config.HipChat.Room != room {
 			http.Error(w, "404 Not Found", http.StatusNotFound)
 			return
 		}

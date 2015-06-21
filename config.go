@@ -29,10 +29,8 @@ type LanguageList []string
 
 type HipChatConfig struct {
 	Enabled bool
-	ForceRoom bool
-	DefaultRoom string
-	PermittedRooms []string
-	ApiToken string
+	Room string
+	RoomToken string
 }
 
 type Duration struct {

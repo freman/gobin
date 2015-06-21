@@ -99,12 +99,13 @@ func init() {
 	pageDefaults["CookieMatch"] = false
 	pageDefaults["HipChat"] = nil
 
-	// HTML and CSS is hard, fixme
-	config.HipChat.ForceRoom = true
+	if config.HipChat.Enabled && config.HipChat.Room != "" && config.HipChat.RoomToken != "" {
+		hipChat = hipchat.NewClient(config.HipChat.RoomToken)
 
-	if config.HipChat.Enabled && config.HipChat.ApiToken != "" {
+/* - wait until library supports auth test
+
 		log.Print("Verifying HipChat configuration")
-		hipChat = hipchat.NewClient(config.HipChat.ApiToken)
+		hipChat = hipchat.NewClient(config.HipChat.RoomToken)
 		if config.HipChat.ForceRoom == false && len(config.HipChat.PermittedRooms) == 0 {
 			rooms, _, err := hipChat.Room.List()
 			if err != nil {
@@ -116,10 +117,12 @@ func init() {
 			}
 		}
 
+//curl -XPOST -H "Content-Type: application/json" -d"{\"message\": \"hello\"}" "https://api.hipchat.com/v2/room/Developers/notification?auth_token=&auth_test=true"
+//{"success": {"code": 202, "message": "This auth_token has access to use this method.", "type": "Accepted"}}
 		if _, _, err := hipChat.Room.Get(config.HipChat.DefaultRoom); err != nil {
 			log.Fatalf("Unable to find room %s: %s", config.HipChat.DefaultRoom, err)
 		}
-
+*/
 		pageDefaults["HipChat"] = config.HipChat
 	}
 

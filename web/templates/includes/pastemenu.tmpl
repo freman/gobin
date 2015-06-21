@@ -33,22 +33,9 @@
 			<li class="dropdown">
 				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Share Post <span class="caret"></span></a>
 				<ul class="dropdown-menu" role="menu">
-	{{ if .HipChat }}{{ $DefaultRoom := .HipChat.DefaultRoom }}{{ $paste := .Paste }}
-		{{ if .HipChat.ForceRoom }}
-					<li><a href="/s/hipchat/{{ $DefaultRoom }}/{{ $paste.ID }}">HipChat ({{ $DefaultRoom }})</a></li>
-		{{ else }}
-					<li class="dropdown">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">HipChat <span class="caret"></span></a>
-						<ul class="dropdown-menu" role="menu">
-							<li><a href="/s/hipchat/{{ $DefaultRoom }}/{{ .Paste.ID }}">HipChat ({{ $DefaultRoom }})</a></li>
-							<li role="presentation" class="divider"></li>
-				{{ range $i, $room := .HipChat.PermittedRooms }}
-							<li><a href="/s/hipchat/{{ $room }}/{{ $paste.ID }}">{{ $room }}</a></li>
-				{{ end }}
-						</ul>
-					</li>
-		{{ end }}
-{{ end }}
+	{{ if .HipChat }}
+					<li><a href="/s/hipchat/{{ .HipChat.Room }}/{{ .Paste.ID }}">HipChat ({{ .HipChat.Room }})</a></li>
+	{{ end }}
 				</ul>
 			</li>
 			<li role="presentation" class="divider"></li>

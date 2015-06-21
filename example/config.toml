@@ -6,7 +6,7 @@ Listen = ":8080"
 Path = "/tmp/pastes"
 
 # Base URL, only really needed if you're using notifications
-BaseURL = "http://pb.lbdev.net"
+BaseURL = "http://pb.internal.lan"
 
 # Number of recent pastes to keep
 Recent = 5
@@ -24,16 +24,9 @@ GuessLanguages = ["ini", "json", "sql", "javascript", "perl", "nginx", "php", "c
 # Are we actually using hipchat?
 Enabled = false
 
-# Is the DefaultRoom in fact the forced and only room?
-ForceRoom = true # at this point, can only be true
-
 # Default room to post to
-DefaultRoom = "SysOps"
-
-# List of rooms that are permitted to paste to, leave as empty
-# to automatically discover
-PermittedRooms = ["SysOps", "Developers"] # Currently ignored
+Room = "SysOps"
 
 # Hipchat v2 api token
-ApiToken = ""
+RoomToken = ""
 
