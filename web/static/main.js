@@ -17,9 +17,13 @@
 		}
 	}).on("click", function() {
 		$(this).next().find('input,textarea').first().focus().closest("body").removeClass("noscroll");
-		$(this).remove();
-	}).attr('style', 'height: ' + $('form.normal').height() + 'px !important;')
-		.closest('body').addClass("noscroll");
+		$(this).hide();
+	}).closest('body').addClass("noscroll");
+
+	$('#dnd').click(function(e) {
+		e.preventDefault();
+		$('.dz').show();
+	})
 
 	jQuery.fn.extend({
 		lineNumbers: function() {

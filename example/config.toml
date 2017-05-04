@@ -20,13 +20,3 @@ Description = "Pastebin in Go"
 Keywords = ["go", "golang", "pastebin"]
 GuessLanguages = ["ini", "json", "sql", "javascript", "perl", "nginx", "php", "cpp", "java", "lua", "http", "go", "xml", "bash", "python", "diff", "css", "dockerfile", "markdown", "applescript", "ruby", "objectivec"]
 
-[HipChat]
-# Are we actually using hipchat?
-Enabled = false
-
-# Default room to post to
-Room = "SysOps"
-
-# Hipchat v2 api token
-RoomToken = ""
-

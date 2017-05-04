@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/freman/gobin/pastes"
-	"github.com/sergi/go-diff/diffmatchpatch"
-	"github.com/tbruyelle/hipchat-go/hipchat"
 	"log"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/freman/gobin/pastes"
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +51,14 @@ func viewAttachmentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPasteHandler(w http.ResponseWriter, r *http.Request) {
+	rawPaste(w, r, true)
+}
+
+func rawPasteHandler(w http.ResponseWriter, r *http.Request) {
+	rawPaste(w, r, false)
+}
+
+func rawPaste(w http.ResponseWriter, r *http.Request, attach bool) {
 	paste := loadPasteFromRequest(w, r)
 	if paste == nil {
 		return
@@ -58,16 +67,18 @@ func getPasteHandler(w http.ResponseWriter, r *http.Request) {
 	if paste.Content == "binary" && strings.Contains(paste.Syntax, "/") {
 		sendBinaryAttachment(paste, w)
 	} else {
-		filename := "paste.txt"
 		contentType := "text/plain"
+		if attach {
+			filename := "paste.txt"
 
-		if strings.Contains(paste.Title, ".") {
-			filename = paste.Title
-		} else if paste.Syntax != "" {
-			filename = "paste." + getExtension(paste.Syntax)
+			if strings.Contains(paste.Title, ".") {
+				filename = paste.Title
+			} else if paste.Syntax != "" {
+				filename = "paste." + getExtension(paste.Syntax)
+			}
+
+			w.Header().Add("Content-Disposition", "attachment; filename="+filename)
 		}
-
-		w.Header().Add("Content-Disposition", "attachment; filename="+filename)
 		w.Header().Set("Content-Type", contentType)
 		fmt.Fprintf(w, "%s", paste.Content)
 	}
@@ -108,7 +119,13 @@ func saveNewPasteHandler(w http.ResponseWriter, r *http.Request) {
 
 	paste.Author = cookie.Value
 	paste.Title = r.FormValue("title")
+	if paste.Title == "" {
+		paste.Title = fmt.Sprintf("Paste @ %s", time.Now().Format("02 Jan 06 15:04"))
+	}
 	paste.Syntax = r.FormValue("syntax")
+	if paste.Syntax == "" {
+		paste.Syntax = "txt"
+	}
 	//	paste.Expiration, err = strconv.Atoi(r.FormValue("expiration"))
 	paste.Content = r.FormValue("content")
 	err = paste.Save()
@@ -263,46 +280,4 @@ func saveEditPasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/p/"+paste.ID, http.StatusSeeOther)
-}
-
-func sharePasteHandler(w http.ResponseWriter, r *http.Request) {
-	bits := strings.Split(r.URL.Path, "/")
-	if len(bits) < 3 {
-		http.Error(w, "400 Method Not Allowed", http.StatusBadRequest)
-		return
-	}
-
-	platform := bits[0]
-	room := bits[1]
-	paste := loadPaste(w, bits[2])
-
-	if paste == nil {
-		return
-	}
-
-	switch (platform) {
-	case "hipchat":
-		if hipChat == nil {
-			http.Error(w, "404 Not Found", http.StatusNotFound)
-			return
-		}
-		if config.HipChat.Room != room {
-			http.Error(w, "404 Not Found", http.StatusNotFound)
-			return
-		}
-
-		//todo make sure room is permitted
-
-		notification := &hipchat.NotificationRequest{
-			Message: fmt.Sprintf("Paste: <a href=\"%s/p/%s\">%s</a>", config.BaseURL, paste.ID, paste.Title),
-		}
-
-		_ = notification
-
-		if _, err := hipChat.Room.Notification(room, notification); err != nil {
-			log.Printf("Unable to send notification to room %s: %s", room, err)
-		}
-
-		http.Redirect(w, r, "/p/"+paste.ID, http.StatusFound)
-	}
 }

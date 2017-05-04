@@ -2,9 +2,9 @@
 		<ul class="nav navbar-nav">
 {{ if not (IsBinary .Paste) }}
 	{{ if .CookieMatch }}
-			<li><a href="/e/{{ .Paste.ID }}">Edit this post</a></li>
+			<li><a href="/e/{{ .Paste.ID }}">Edit this paste</a></li>
 	{{ end }}
-			<li><a href="/n/{{ .Paste.ID }}">Extend this post</a></li>
+			<li><a href="/n/{{ .Paste.ID }}">Extend this paste</a></li>
 	{{ if .Paste.Parent }}
 			<li><a href="/p/{{ .Paste.Parent }}">Older Version</a></li>
 			<li><a href="/d/{{ .Paste.ID }}/{{ .Paste.Parent }}">Older Diff</a></li>
@@ -13,7 +13,7 @@
 		{{ $paste := .Paste }}
 		{{ if gt 1 (len .Paste.Children) }}
 			<li class="dropdown">
-				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">	Recent Posts <span class="caret"></span></a>
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">	Recent <span class="caret"></span></a>
 				<ul class="dropdown-menu" role="menu">
 			{{ range $id, $ignore := .Paste.Children }}
 					<li><a href="/p/{{ $id }}">{{ $id }}</a></li>
@@ -29,17 +29,7 @@
 	{{ end }}
 			<li role="presentation" class="divider"></li>
 {{ end }}
-{{ if .ShowNotify }}
-			<li class="dropdown">
-				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Share Post <span class="caret"></span></a>
-				<ul class="dropdown-menu" role="menu">
-	{{ if .HipChat }}
-					<li><a href="/s/hipchat/{{ .HipChat.Room }}/{{ .Paste.ID }}">HipChat ({{ .HipChat.Room }})</a></li>
-	{{ end }}
-				</ul>
-			</li>
-			<li role="presentation" class="divider"></li>
-{{ end }}
-			<li><a href="/g/{{ .Paste.ID }}">Download Post</a></li>
+			<li><a href="/r/{{ .Paste.ID }}">Raw</a></li>
+			<li><a href="/g/{{ .Paste.ID }}">Download</a></li>
 		</ul>
 {{ end }}

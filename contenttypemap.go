@@ -55,7 +55,7 @@ func guessByContent(r io.ReadSeeker) (syntax string, ok bool) {
 		ok = true
 		match := buf.String()
 
-		foundType:
+	foundType:
 		for t, exprs := range mContentMatch {
 			for _, expr := range exprs {
 				if expr.MatchString(match) {

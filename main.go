@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/freman/gobin/pastes"
-	"github.com/sergi/go-diff/diffmatchpatch"
-	"github.com/tbruyelle/hipchat-go/hipchat"
 	"html/template"
 	"io"
 	"log"
@@ -14,16 +11,20 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/freman/gobin/pastes"
+	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/tbruyelle/hipchat-go/hipchat"
 )
 
 type Handlers map[string]http.HandlerFunc
 
 var (
-	config Config
-	bin              *pastes.Pastes
-	templates        map[string]*template.Template
-	pageDefaults     map[string]interface{}
-	hipChat          *hipchat.Client
+	config       Config
+	bin          *pastes.Pastes
+	templates    map[string]*template.Template
+	pageDefaults map[string]interface{}
+	hipChat      *hipchat.Client
 )
 
 func init() {
@@ -97,36 +98,6 @@ func init() {
 
 	pageDefaults["HaveCookie"] = false
 	pageDefaults["CookieMatch"] = false
-	pageDefaults["HipChat"] = nil
-
-	if config.HipChat.Enabled && config.HipChat.Room != "" && config.HipChat.RoomToken != "" {
-		hipChat = hipchat.NewClient(config.HipChat.RoomToken)
-
-/* - wait until library supports auth test
-
-		log.Print("Verifying HipChat configuration")
-		hipChat = hipchat.NewClient(config.HipChat.RoomToken)
-		if config.HipChat.ForceRoom == false && len(config.HipChat.PermittedRooms) == 0 {
-			rooms, _, err := hipChat.Room.List()
-			if err != nil {
-				log.Fatalf("Unable to get list of HipChat rooms: %s", err)
-			}
-
-			for _, r := range rooms.Items {
-				config.HipChat.PermittedRooms = append(config.HipChat.PermittedRooms, r.Name)
-			}
-		}
-
-//curl -XPOST -H "Content-Type: application/json" -d"{\"message\": \"hello\"}" "https://api.hipchat.com/v2/room/Developers/notification?auth_token=&auth_test=true"
-//{"success": {"code": 202, "message": "This auth_token has access to use this method.", "type": "Accepted"}}
-		if _, _, err := hipChat.Room.Get(config.HipChat.DefaultRoom); err != nil {
-			log.Fatalf("Unable to find room %s: %s", config.HipChat.DefaultRoom, err)
-		}
-*/
-		pageDefaults["HipChat"] = config.HipChat
-	}
-
-	pageDefaults["ShowNotify"] = pageDefaults["HipChat"] != nil
 }
 
 func renderTemplate(w http.ResponseWriter, name string, data map[string]interface{}) error {
@@ -242,11 +213,11 @@ func main() {
 	handlerForPrefix(mux, "/p/", handlerForMethod(Handlers{"GET": viewPasteHandler}))
 	handlerForPrefix(mux, "/a/", handlerForMethod(Handlers{"GET": viewAttachmentHandler}))
 	handlerForPrefix(mux, "/g/", handlerForMethod(Handlers{"GET": getPasteHandler}))
+	handlerForPrefix(mux, "/r/", handlerForMethod(Handlers{"GET": rawPasteHandler}))
 	handlerForPrefix(mux, "/n/", handlerForMethod(Handlers{"GET": newPasteHandler, "POST": saveNewPasteHandler}))
 	handlerForPrefix(mux, "/f/", handlerForMethod(Handlers{"POST": uploadNewPasteHandler}))
 	handlerForPrefix(mux, "/d/", handlerForMethod(Handlers{"GET": diffPasteHandler}))
 	handlerForPrefix(mux, "/e/", handlerForMethod(Handlers{"GET": editPasteHandler, "POST": saveEditPasteHandler}))
-	handlerForPrefix(mux, "/s/", handlerForMethod(Handlers{"GET": sharePasteHandler}))
 
 	go func() {
 		for {

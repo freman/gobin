@@ -2,25 +2,25 @@ package main
 
 import (
 	"log"
-	"time"
 	"strings"
+	"time"
+
 	"github.com/BurntSushi/toml"
 )
 
 type Config struct {
-	Listen string
-	Path string
-	BaseURL string
-	Recent int
+	Listen       string
+	Path         string
+	BaseURL      string
+	Recent       int
 	SaveInterval Duration
-	Site *SiteConfig
-	HipChat *HipChatConfig
+	Site         *SiteConfig
 }
 
 type SiteConfig struct {
-	Title string
-	Description string
-	Keywords KeywordList
+	Title          string
+	Description    string
+	Keywords       KeywordList
 	GuessLanguages LanguageList
 }
 
@@ -28,13 +28,13 @@ type KeywordList []string
 type LanguageList []string
 
 type HipChatConfig struct {
-	Enabled bool
-	Room string
+	Enabled   bool
+	Room      string
 	RoomToken string
 }
 
 type Duration struct {
-    time.Duration
+	time.Duration
 }
 
 func (k KeywordList) String() string {
@@ -46,8 +46,8 @@ func (l LanguageList) String() string {
 }
 
 func (d *Duration) UnmarshalText(text []byte) (err error) {
-    d.Duration, err = time.ParseDuration(string(text))
-    return
+	d.Duration, err = time.ParseDuration(string(text))
+	return
 }
 
 func loadConfig(configFile string) (config Config) {
