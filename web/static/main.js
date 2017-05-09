@@ -25,44 +25,16 @@
 		$('.dz').show();
 	})
 
-	jQuery.fn.extend({
-		lineNumbers: function() {
-			if (this.find('.line-number').length) {
-				return
-			}
-
-			fixWrap = function fixWrap() {
-				lines = this.find('code span.line');
-				foo = this.find('.line-number span.line').each(function (i, v) {
-					$(v).attr('style', 'height: ' + $(lines.get(i)).height() + 'px !important;');
-				})
-			}.bind(this)
-
-			fixWrap();
-			$(window).resize(fixWrap);
-
-			this
-				.prepend('<span class="line-number hljs"></span>')
-				.append('<span class="cl"></span>').each(function() {
-					var numbers = $(this).find('.line-number');
-					output = '';
-					$(this).find('code').html().split(/\n/).forEach(function(v, i) {
-						output += '<span class="line" id="l' + (i + 1) + '">' + v + '</span>' + "\n";
-						numbers.append('<span class="line" id="c' + (i + 1) + '">' + (i + 1) + '</span>')
-					});
-					$(this).find('code').html(output);
-					window.setTimeout(fixWrap, 150);
-				});
-
-			this.find('.line-number').on('click', 'span', function() {
-				window.location.hash = $(this).attr('id').replace('c', 'l');
-			})
-
-		}
-	})
-
 	if (hljs) {
 		var languages = hljs.listLanguages();
+
+		var delay = (function(){
+			var timer = 0;
+			return function(callback, ms){
+			clearTimeout (timer);
+			timer = setTimeout(callback, ms);
+			};
+		})();
 
 		languages.sort();
 
@@ -81,8 +53,21 @@
 				$('input[name="syntax"]').autocomplete("search", "");
 			});
 
+		var worker;
+		if (typeof(Worker) !== "undefined") {
+			worker = new Worker('/static/worker.js');
+		}
+
 		$('textarea').on('keyup', function(e) {
-			$('input[name="syntax"].auto').val(hljs.highlightAuto($(this).val(), guessLanguages).language)
+			var t = $(this)
+			delay(function() {
+				if (typeof(worker) !== "undefined") {
+					worker.onmessage = function(event) { $('input[name="syntax"].auto').val(event.data); }
+					worker.postMessage({syntaxes: GuessLanguages, code: t.val(), guess: true});
+				} else {
+					$('input[name="syntax"].auto').val(hljs.highlightAuto($(this).val(), guessLanguages).language)
+				}
+			},500);
 		})
 	}
 })();

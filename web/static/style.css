@@ -90,33 +90,6 @@ pre {
 	white-space: -o-pre-wrap;    /* Opera 7 */
 	word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
-pre span {
-	line-height: 1em;
-}
-pre code .line {
-	float: left;
-	width: 100%;
-}
-
-pre .line:nth-child(odd) {
-	background-color: #eaeaea;
-}
-
-pre .line-number {
-	float:left;
-	border-right:1px solid;
-	text-align:right;
-}
-
-pre .line-number span {
-	display:block;
-	padding:0em .5em 0 1em;
-}
-
-pre .cl {
-	display:block;
-	clear:both;
-}
 
 span.diff.remove {
 	color: red;
@@ -126,7 +99,7 @@ span.diff.remove {
 span.diff.add {
 	color: lime;
 }
+
 code span {
 	display: inline-block;
-	min-height: 1em;
 }

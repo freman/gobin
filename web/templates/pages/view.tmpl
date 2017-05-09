@@ -17,11 +17,16 @@
 <script>
 syntax = $('#codeBlock').data('syntax');
 if (hljs.getLanguage(syntax)) {
-	$('#codeBlock').addClass('language-' + syntax);
-	hljs.initHighlightingOnLoad();
+	if (typeof(Worker) !== "undefined") {
+		var worker = new Worker('/static/worker.js');
+		worker.onmessage = function(event) { $('#codeBlock').html(event.data); }
+		worker.postMessage({syntax: syntax, code: $('#codeBlock').text()});
+	} else {
+		$('#codeBlock').addClass(syntax);
+		hljs.initHighlightingOnLoad();
+	}
 } else {
 	$('#codeBlock').addClass('hljs');
 }
-$('pre').lineNumbers();
 </script>
 {{ end }}
